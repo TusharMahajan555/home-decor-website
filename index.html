@@ -353,6 +353,9 @@
         .appt-field textarea{resize:none;height:90px;}
         .appt-submit{background:var(--dark);color:var(--white);padding:13px 36px;font-family:'Jost',sans-serif;font-size:.74rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;border:none;cursor:pointer;width:100%;margin-top:8px;transition:background .3s;}
         .appt-submit:hover{background:var(--gold);}
+        .appt-field input.invalid{border-color:#C0392B;}
+        .appt-status{font-size:.8rem;font-weight:400;line-height:1.6;margin-top:12px;min-height:1em;color:var(--green);}
+        .appt-status.error{color:#C0392B;}
 
         /* ═══ MEDIA / PRESS ═══ */
         .media-section{padding:90px 60px;background:var(--white);}
@@ -1088,16 +1091,16 @@
             <div style="display:flex;align-items:center;gap:12px;font-size:.85rem;font-weight:300;color:rgba(28,23,18,.65);">✅ 15+ years of expertise</div>
         </div>
     </div>
-    <div class="appt-form">
+    <form class="appt-form" id="apptForm" novalidate>
         <h3>Book an Appointment</h3>
         <div class="appt-row">
-            <div class="appt-field"><label>Full Name</label><input type="text" placeholder="Your full name"></div>
-            <div class="appt-field"><label>Phone</label><input type="tel" placeholder="+91 99999 99999"></div>
+            <div class="appt-field"><label for="apptName">Full Name</label><input type="text" id="apptName" name="name" placeholder="Your full name" autocomplete="name" required></div>
+            <div class="appt-field"><label for="apptPhone">Phone</label><input type="tel" id="apptPhone" name="phone" placeholder="+91 99999 99999" autocomplete="tel" required></div>
         </div>
         <div class="appt-row">
-            <div class="appt-field"><label>Email</label><input type="email" placeholder="your@email.com"></div>
-            <div class="appt-field"><label>Service Interested In</label>
-                <select>
+            <div class="appt-field"><label for="apptEmail">Email</label><input type="email" id="apptEmail" name="email" placeholder="your@email.com" autocomplete="email"></div>
+            <div class="appt-field"><label for="apptService">Service Interested In</label>
+                <select id="apptService" name="service">
                     <option>Home Decoration</option>
                     <option>Wooden Flooring</option>
                     <option>Modular Kitchen</option>
@@ -1111,9 +1114,10 @@
                 </select>
             </div>
         </div>
-        <div class="appt-field" style="margin-bottom:14px;"><label>Message</label><textarea placeholder="Tell us about your project..."></textarea></div>
-        <button class="appt-submit">Send Enquiry</button>
-    </div>
+        <div class="appt-field" style="margin-bottom:14px;"><label for="apptMessage">Message</label><textarea id="apptMessage" name="message" placeholder="Tell us about your project..."></textarea></div>
+        <button type="submit" class="appt-submit">Send Enquiry</button>
+        <p class="appt-status" id="apptStatus" role="status" aria-live="polite"></p>
+    </form>
 </section>
 
 <!-- ═══ MEDIA COVERAGE ═══ -->
@@ -1367,6 +1371,47 @@
     setTimeout(()=>{
       waBubble.classList.add('open');
     },8000);
+    // APPOINTMENT FORM — no server: opens WhatsApp with the enquiry pre-filled
+    const apptForm=document.getElementById('apptForm');
+    const apptStatus=document.getElementById('apptStatus');
+    apptForm.addEventListener('submit',e=>{
+      e.preventDefault();
+      const f=apptForm.elements;
+      const name=f.name.value.trim();
+      const phone=f.phone.value.trim();
+      const email=f.email.value.trim();
+      const service=f.service.value;
+      const message=f.message.value.trim();
+
+      [f.name,f.phone,f.email].forEach(el=>el.classList.remove('invalid'));
+      const errors=[];
+      if(name.length<2){errors.push('your name');f.name.classList.add('invalid');}
+      if(phone.replace(/\D/g,'').length<10){errors.push('a valid phone number');f.phone.classList.add('invalid');}
+      if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errors.push('a valid email');f.email.classList.add('invalid');}
+      if(errors.length){
+        apptStatus.className='appt-status error';
+        apptStatus.textContent='Please enter '+errors.join(', ')+'.';
+        return;
+      }
+
+      const lines=[
+        'Hi Home Decorators! I would like to book an appointment.',
+        '',
+        'Name: '+name,
+        'Phone: '+phone
+      ];
+      if(email)lines.push('Email: '+email);
+      lines.push('Service: '+service);
+      if(message)lines.push('Message: '+message);
+
+      const url='https://wa.me/919780932467?text='+encodeURIComponent(lines.join('\n'));
+      const win=window.open(url,'_blank');
+      if(!win)window.location.href=url;
+
+      apptStatus.className='appt-status';
+      apptStatus.textContent='Opening WhatsApp… please tap Send to complete your enquiry.';
+      apptForm.reset();
+    });
 </script>
 </body>
 </html>
